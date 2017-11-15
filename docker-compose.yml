@@ -1,0 +1,32 @@
+version: "2.2"
+services:
+  
+  redis:
+    image: redis:3.2
+    restart: on-failure
+    expose:
+      - "6379"
+
+  redis-ca:
+    build: 
+      context: .
+      dockerfile: redis-ca.Dockerfile
+    image: rentlytics/redis-ca:latest
+    
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rentlytics/nginx-streaming:1.12.2
+    links:
+      - "redis"
+    depends_on:
+      - redis-ca
+      - redis
+    environment:
+      - REDIS_HOST=redis
+    ports:
+      - "6379:6379"
+    volumes_from:
+      - redis-ca:ro
+    restart: on-failure

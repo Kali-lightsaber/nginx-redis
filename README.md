@@ -4,6 +4,7 @@ This repository contains the necessary files to build and run an Nginx proxy wit
 ####Running a container
 In order to correctly run a container from this image, you will need to set environment variables, open ports, and map volumes in the `docker run` command, as described in the sections below.
 #####Environment Variables
+
 Name | Required | Purpose | Default
 ---|:---:|---|---
 PROXY_PORT | no | The port on which the nginx server listens | 6379

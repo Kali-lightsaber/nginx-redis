@@ -33,3 +33,16 @@ If this nginx proxy should be for a redis server running in another docker conta
 `docker run -e "REDIS_HOST=redis" -e "PROXY_PORT=6378" --volumes-from redis-ca --name nginx --link redis -p "6378:6378" -d rentlytics/nginx-streaming:1.12.2`
 ###### docker-compose
 This repo also contains a docker-compose example that starts a CA container, a redis container, and an nginx container listening on port 6378.  Start it with the standard command: `docker-compose up`
+
+#### Testing the connection
+If you are running via `docker-compose`, it's possible to test the secure connection to redis because the `redis-ca` generates client certificates too.  Copy them to your local host machine with `docker cp nginxredis_redis-ca_1:/root/ca/certs/client.pem .` and `docker cp nginxredis_redis-ca_1:/root/ca/certs/ca.pem .` and `docker cp nginxredis_redis-ca_1:/root/ca/private/client.key .`.  Then you can use the certs and openssl to create a secure client: `openssl s_client -connect localhost:6379 -cert client.pem -key client.key -CAfile ca.pem`.  Once the secure channel is open, you can interact with your redis server.  Try a few commands:
+```
+set foo 100
+incr foo
+append foo xxx
+get foo
+get /
+del foo
+get /
+quit
+```

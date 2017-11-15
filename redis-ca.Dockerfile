@@ -60,5 +60,24 @@ RUN openssl ca -config openssl.cnf \
 RUN cat certs/nginx.pem >> certs/nginx-chain.pem && \
     cat certs/ca.pem >> certs/nginx-chain.pem
 
+RUN openssl genrsa -out private/client.key 2048 && \
+    chmod 400 private/client.key
+
+RUN openssl req -config openssl.cnf \
+    -key private/client.key \
+    -new -sha256 \
+    -subj "/CN=client/O=Rentlytics, Inc/OU=engineers/L=San Francisco/ST=California/C=US" \
+    -out newcerts/client.csr
+
+RUN openssl ca -config openssl.cnf \
+    -extensions usr_cert \
+    -days 750 \
+    -notext -batch \
+    -md sha256 \
+    -key development \
+    -in newcerts/client.csr \
+    -out certs/client.pem && \
+    chmod 444 certs/client.pem
+
 VOLUME ["/root/ca"]
 CMD [ "/usr/bin/tail", "-f", "/dev/null" ]

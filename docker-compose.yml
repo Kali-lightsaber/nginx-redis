@@ -12,7 +12,9 @@ services:
       context: .
       dockerfile: redis-ca.Dockerfile
     image: rentlytics/redis-ca:latest
-    
+    volumes:
+      - ca:/root/ca:rw
+
   nginx:
     build:
       context: .
@@ -27,6 +29,9 @@ services:
       - REDIS_HOST=redis
     ports:
       - "6379:6379"
-    volumes_from:
-      - redis-ca:ro
+    volumes:
+      - ca:/root/ca:ro
     restart: on-failure
+
+volumes:
+  ca:

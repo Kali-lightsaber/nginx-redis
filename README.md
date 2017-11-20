@@ -46,3 +46,11 @@ del foo
 get /
 quit
 ```
+
+#### Certificate Concerns
+##### Getting the correct CN on the nginx proxy certificate
+When you connect to an SSL/TLS service, the hostname or IP Address that you use must match what's on the server's certificate.  In order to generate the correct certificate for the nginx server, build its docker image and pass the `NGINX_URL` build argument: `docker build --build-arg NGINX_URL=redis.staging.rentlytics.com:6379 -t rentlytics/redis-ca:latest .` (the default is `localhost:6379`).  
+##### Protecting the CA private key
+Obviously, the private keys in `/root/ca/private` must be protected.  The private key to the certificate authority is further protected with a password that you can set with a `ROOT_KEY_PASS` build argument: `docker build --build-arg ROOT_KEY_PASS=some_very_secure_password -t rentlytics/redis-ca:latest .` (the default is `development`).
+##### Future work
+It may be wiser to move all of the CA and certificate creation to a docker entrypoint so that the CA and certificates will be built at runtime instead of at image creation time.  This is because anyone who can get a copy of the image will also be able to get the private keys.  What I would do is keep the redis-ca docker image for docker-compose usage, but I would update `setup-instance.sh` to run all the commands (from the redis-ca dockerfile) to create a CA in $HOME/ca on the docker host and then mount that into the nginx docker container - instead of creating a volume and using the redis-ca docker container to create the CA and certificates.

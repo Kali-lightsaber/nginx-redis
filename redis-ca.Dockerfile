@@ -2,6 +2,8 @@ FROM ubuntu:xenial
 LABEL maintainer='Rentlytics Engineers <engineers@rentlytics.com>'
 
 ARG ROOT_KEY_PASS=development
+ARG NGINX_URL=localhost:6379
+
 RUN apt update && apt upgrade -y
 RUN apt install -y openssl
 
@@ -41,7 +43,7 @@ RUN openssl genrsa \
 RUN openssl req -config openssl.cnf \
     -key private/nginx.key \
     -new -sha256 \
-    -subj "/CN=localhost:6379/O=Rentlytics, Inc/OU=engineers/L=San Francisco/ST=California/C=US" \
+    -subj "/CN=${NGINX_URL}/O=Rentlytics, Inc/OU=engineers/L=San Francisco/ST=California/C=US" \
     -out newcerts/nginx.csr
 
 RUN openssl ca -config openssl.cnf \

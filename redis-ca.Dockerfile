@@ -76,7 +76,7 @@ RUN openssl ca -config openssl.cnf \
     -days 750 \
     -notext -batch \
     -md sha256 \
-    -key development \
+    -key ${ROOT_KEY_PASS} \
     -in newcerts/client.csr \
     -out certs/client.pem && \
     chmod 444 certs/client.pem

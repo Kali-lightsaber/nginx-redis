@@ -54,3 +54,21 @@ When you connect to an SSL/TLS service, the hostname or IP Address that you use 
 Obviously, the private keys in `/root/ca/private` must be protected.  The private key to the certificate authority is further protected with a password that you can set with a `ROOT_KEY_PASS` build argument: `docker build --build-arg ROOT_KEY_PASS=some_very_secure_password -t rentlytics/redis-ca:latest .` (the default is `development`).
 ##### Future work
 It may be wiser to move all of the CA and certificate creation to a docker entrypoint so that the CA and certificates will be built at runtime instead of at image creation time.  This is because anyone who can get a copy of the image will also be able to get the private keys.  What I would do is keep the redis-ca docker image for docker-compose usage, but I would update `setup-instance.sh` to run all the commands (from the redis-ca dockerfile) to create a CA in $HOME/ca on the docker host and then mount that into the nginx docker container - instead of creating a volume and using the redis-ca docker container to create the CA and certificates.
+
+### Setting up a staging or production EC2 instance
+You need to have:
+1. The primary endpoint of an AWS redis instance (REDIS_HOST)
+1. A secure password for your certificate authority's key (ROOT_KEY_PASS)
+1. An EC2 instance that has `setup-instance.sh` (from this repository) on it
+1. A Route 53 A record that points the NGINX_URL (ex. redis.production.rentlytics.com:6379) to the EC2 instance
+1. The ID of the AWS ECR: run `aws ecr get-login --region us-east-1` and look at the hostname at the end (example: 366985115424.dkr.ecr.us-east-1.amazonaws.com)
+
+Then:
+1. on your local machine, log in to our AWS ECR: `$(aws ecr get-login --no-include-email --region us-east-1)`
+1. Build the redis-ca container: `docker build --build-arg NGINX_URL=${NGINX_URL} --build-arg ROOT_KEY_PASS=${ROOT_KEY_PASS} -f ./redis-ca.Dockerfile -t redis-ca:${ENV_NAME} .`
+1. Tag it for AWS ECR: `docker tag redis-ca:${ENV_NAME} ${AWS_ECR_ID}/redis-ca:${ENV_NAME}`
+1. push it to the registry: `docker push ${AWS_ECR_ID}/redis-ca:${ENV_NAME}`
+1. ssh into the EC2 instance
+1. run `setup-instance.sh ${ENV_NAME} ${REDIS_HOST} ${AWS_ECR_ID}`
+1. exit from the instance
+1. download the client cert materials: `scp ubuntu@ec2-instance:./client-cert.zip .`

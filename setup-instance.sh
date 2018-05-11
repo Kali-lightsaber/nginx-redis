@@ -43,12 +43,16 @@ pip3 install --upgrade pip
 pip3 install awscli
 $(aws ecr get-login --no-include-email --region us-east-1)
 
+# increase the max open file limits on the host
+ulimit -n 65536
+ulimit -S -n 65536
+
 # generate certs
 docker volume create ca
 docker run -v ca:/root/ca:rw --name redis-ca -d ${AWS_ECS_ID}/redis-ca:${ENV_NAME}
 
 # run nginx
-docker run -v ca:/root/ca:ro --name nginx --restart always -d -e "REDIS_HOST=${REDIS_HOST}" -p "6379:6379" ${AWS_ECS_ID}/nginx-streaming:1.12.2
+docker run -v ca:/root/ca:ro --name nginx --restart always --ulimit nofile=64000:64000 -d -e "REDIS_HOST=${REDIS_HOST}" -p "6379:6379" ${AWS_ECS_ID}/nginx-streaming:1.12.2
 
 # copy client cert materials locally
 cp /var/lib/docker/volumes/ca/_data/certs/client.pem .

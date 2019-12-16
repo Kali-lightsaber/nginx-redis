@@ -41,6 +41,7 @@ usermod -a -G docker ubuntu
 # setup AWS CLI and log into the private docker repository
 pip3 install --upgrade pip
 pip3 install awscli
+aws configure
 $(aws ecr get-login --no-include-email --region us-east-1)
 
 # increase the max open file limits on the host

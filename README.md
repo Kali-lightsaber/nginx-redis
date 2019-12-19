@@ -108,10 +108,10 @@ These steps apply whether you're setting up a new environment or just updating t
 certificates for an existing environment. 
 
 You will need:
-1. An EC2 instance running ubuntu that has `setup-instance.sh` (from this repository) on
-   it.
+1. An EC2 instance running ubuntu that has `setup-instance.sh` (from this repository)
+   copied to it.
 1. A Route 53 "A Record" that points the to the EC2 instance with the name you intend to 
-   have in the `${REDIS_URL}` below.
+   use as the `${HOST_NAME}` below.
 1. The following pieces of information. You don't need to set them as environment
    variables, and it won't do you much good if you did because we're running 
    commands across multiple machines, but all the commands below will use 
@@ -148,7 +148,7 @@ You will need:
 Then:
 1. on your local machine, log in to your AWS ECR: 
    `$(aws ecr get-login --no-include-email)`
-1. Build the redis-ca container: 
+1. Build the redis-ca image: 
    `docker build --build-arg NGINX_URL=${REDIS_URL} --build-arg ROOT_KEY_PASS=${ROOT_KEY_PASS} -f ./redis-ca.Dockerfile -t redis-ca:${ENV_NAME} .`
 1. Tag it for AWS ECR: 
    `docker tag redis-ca:${ENV_NAME} ${AWS_ECR_ID}/redis-ca:${ENV_NAME}`
@@ -166,12 +166,5 @@ Then:
 1. run `setup-instance.sh ${ENV_NAME} ${REDIS_HOST} ${AWS_ECR_ID}`
 1. exit from the instance
 1. download the client cert materials: `scp ubuntu@{HOST_IP}:./client-cert.zip .`
-1. unzip the file and copy the contents of each file into the specified environment
-   variables in heroku:
 
-   filename | variable
-   ---|---
-   ca.pem | `REDIS_TRUST_CERT`
-   client.pem | `REDIS_CLIENT_CERT`
-   client.key | `REDIS_CLIENT_KEY`
 

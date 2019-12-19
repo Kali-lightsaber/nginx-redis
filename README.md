@@ -103,48 +103,58 @@ dockerfile) to create a CA in $HOME/ca on the docker host and then mount that in
 nginx docker container - instead of creating a volume and using the redis-ca docker
 container to create the CA and certificates.
 
-### Setting up a staging or production EC2 instance
+### Setting up an EC2 instance to be an nginx-redis proxy
 These steps apply whether you're setting up a new environment or just updating the
 certificates for an existing environment. 
 
 You will need:
-1. The following pieces of information:
+1. An EC2 instance running ubuntu that has `setup-instance.sh` (from this repository) on
+   it.
+1. A Route 53 "A Record" that points the to the EC2 instance with the name you intend to 
+   have in the `${REDIS_URL}` below.
+1. The following pieces of information. You don't need to set them as environment
+   variables, and it won't do you much good if you did because we're running 
+   commands across multiple machines, but all the commands below will use 
+   shell-style `${VARNAME}` references as if you do have these set:
   
     AWS_ECR_ID
-    : The ID of the AWS ECR. Obtain by runing `aws ecr get-login --region us-east-1` and
+    : The ID of your AWS ECR. Obtain by runing `aws ecr get-login` and
       look at the hostname at the end 
-      (ex: `366985115424.dkr.ecr.us-east-1.amazonaws.com`)
+      (ex: `123456789012.dkr.ecr.us-east-1.amazonaws.com`)
 
-    NGINX_IP
-    : The ip address of the nginx host
+    ENV_NAME
+    : The name of the environment you're creating a server for (ex: `production`) 
 
-    NGINX_URL
-    : The host and port for inbound redis connections 
-      (ex. `redis.staging.rentlytics.com:6379`)
+    HOST_IP
+    : The ip address of the EC2 instance. You can find it in your aws console under
+       EC2 > Instances. 
+      
+    HOST_NAME
+    : The DNS name for the Route 53 A Record. You can find this in your aws console
+      under Route 53. (ex. `redis.production.mycompany.com`)
+
+    REDIS_URL
+    : The host and port for inbound redis connections. This should be something like 
+      `${HOST_NAME}:6379` (ex. `redis.production.mycompany.com:6379`)
 
     REDIS_HOST
     : The primary endpoint of an AWS redis instance. This can be found in the aws console
       under Elasticache Dashboard > Redis. 
-      (ex. `redis-staging.747uya.ng.0001.use1.cache.amazonaws.com`)
+      (ex. `redis-staging.121lpg.ag.0001.use1.cache.amazonaws.com`)
       
     ROOT_KEY_PASS
-    : A secure password for your certificate authority's key. This can be found in
-      LastPass. Currently staging and production are both using the production password.
+    : A secure password for your certificate authority's key. Keep this secret and safe.
       
-1. An EC2 instance that has `setup-instance.sh` (from this repository) on it
-1. A Route 53 "A Record" that points the to the EC2 instance with the name from NGINX_URL
-
 Then:
-1. on your local machine, log in to our AWS ECR: 
-   `$(aws ecr get-login --no-include-email --region us-east-1)`
+1. on your local machine, log in to your AWS ECR: 
+   `$(aws ecr get-login --no-include-email)`
 1. Build the redis-ca container: 
-   `docker build --build-arg NGINX_URL=${NGINX_URL} --build-arg ROOT_KEY_PASS=${ROOT_KEY_PASS} -f ./redis-ca.Dockerfile -t redis-ca:${ENV_NAME} .`
+   `docker build --build-arg NGINX_URL=${REDIS_URL} --build-arg ROOT_KEY_PASS=${ROOT_KEY_PASS} -f ./redis-ca.Dockerfile -t redis-ca:${ENV_NAME} .`
 1. Tag it for AWS ECR: 
    `docker tag redis-ca:${ENV_NAME} ${AWS_ECR_ID}/redis-ca:${ENV_NAME}`
 1. push it to the registry: 
    `docker push ${AWS_ECR_ID}/redis-ca:${ENV_NAME}`
-1. ssh into the EC2 instance 
-   `ssh -i path/to/john_ruiz's/key ubuntu@${NGINX_IP}`
+1. ssh into your host instance: `ssh ubuntu@${HOST_IP}`
 1. if you're updating an existing nginx server, there will be name collisions with the old
    containers and images, so run the following commands first:
    1. stop running docker containers: 
@@ -155,7 +165,7 @@ Then:
       `sudo docker image rm $(docker image ls -aq)`
 1. run `setup-instance.sh ${ENV_NAME} ${REDIS_HOST} ${AWS_ECR_ID}`
 1. exit from the instance
-1. download the client cert materials: `scp ubuntu@ec2-instance:./client-cert.zip .`
+1. download the client cert materials: `scp ubuntu@{HOST_IP}:./client-cert.zip .`
 1. unzip the file and copy the contents of each file into the specified environment
    variables in heroku:
 

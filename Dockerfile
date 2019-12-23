@@ -6,8 +6,8 @@ ARG NGINX_VERSION=1.12.2
 
 RUN echo 'deb-src http://archive.ubuntu.com/ubuntu/ xenial main restricted' >> /etc/apt/sources.list
 RUN echo 'deb-src http://archive.ubuntu.com/ubuntu/ xenial-updates main restricted' >> /etc/apt/sources.list
-RUN apt update && apt upgrade -y
-RUN apt install -y libpcre3 libpcre3-dev zlib1g zlib1g-dev libssl1.0.0 libssl-dev unzip wget dpkg-dev automake
+RUN apt-get update && apt-get upgrade -y
+RUN apt-get install -y libpcre3 libpcre3-dev zlib1g zlib1g-dev libssl1.0.0 libssl-dev unzip wget dpkg-dev automake
 
 RUN mkdir ca && \
     mkdir nginx && \
@@ -15,9 +15,8 @@ RUN mkdir ca && \
     chmod 774 nginx
 
 WORKDIR /root/nginx
-USER _apt
-RUN apt source pcre3 zlib1g
 USER root
+RUN apt-get source pcre3 zlib1g
 
 RUN wget https://github.com/nginx/nginx/archive/release-${NGINX_VERSION}.zip
 RUN unzip release-${NGINX_VERSION}.zip
